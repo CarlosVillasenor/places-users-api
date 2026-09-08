@@ -2,6 +2,7 @@ const HttpError = require('../models/http-error');
 const uuid = require('uuid');
 const { validationResult } = require('express-validator');
 const { getCoordsForAddress } = require('../util/location');
+const Place = require('../models/place');
 
 /**
  * Temporary in-memory place records used until persistent storage is added.
@@ -78,35 +79,52 @@ const getPlacesByUserId = (req, res, next) => {
 const createPlace = async (req, res, next) => {
   const errors = validationResult(req);
 
-  console.log(req.body);
-
   // Check for validation errors from express-validator.
   if (!errors.isEmpty()) {
-    next(new HttpError('Invalid inputs passed, please check your data.', 422));
+    return next(
+      new HttpError('Invalid inputs passed, please check your data.', 422),
+    );
   }
 
+  // Extract place details from the request body.
   const { title, description, address, creator } = req.body;
 
   let coordinates;
 
+  // Get geographic coordinates for the provided address.
   try {
     coordinates = await getCoordsForAddress(address);
   } catch (error) {
     return next(error);
   }
 
-  const newPlace = {
-    id: uuid.v4(),
+  // Create a new place document.
+  const newPlace = new Place({
     title,
     description,
+    image:
+      'https://images.squarespace-cdn.com/content/v1/620bb50c00af5319710b2218/2d188987-4180-421b-94ec-7172c9358460/Flowers-background-blur.jpg',
     location: coordinates,
     address,
-    creator
-  };
+    creator,
+  });
 
-  DUMMY_PLACES.push(newPlace);
+  try {
+    await newPlace.save();
+  } catch (error) {
+    console.error('Creating place failed:', error);
 
-  res.status(201).json({ place: newPlace });
+  const err = new HttpError(
+    'Creating place failed, please try again.',
+    500
+  );
+
+  return next(err);
+  }
+
+  res.status(201).json({
+    place: newPlace,
+  });
 };
 
 /**

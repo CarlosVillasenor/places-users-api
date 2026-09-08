@@ -5,10 +5,10 @@
  * geographic coordinates (latitude and longitude) using the Google
  * Geocoding API.
  */
-
+require("dotenv").config();
 const axios = require("axios");
 // WARNING: API key is exposed in source code. Should be moved to environment variables.
-const API_KEY = "AIzaSyAwooPY6coIvBoX_-uQwU1awUJd_7TcgWw";
+const API_KEY = process.env.GOOGLE_API_KEY;
 const HttpError = require("../models/http-error");
 
 /**
