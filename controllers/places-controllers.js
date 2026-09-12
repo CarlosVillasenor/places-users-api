@@ -5,24 +5,6 @@ const { getCoordsForAddress } = require("../util/location");
 const Place = require("../models/place");
 
 /**
- * Temporary in-memory place records used until persistent storage is added.
- */
-
-let DUMMY_PLACES = [
-  {
-    id: "p1",
-    title: "Empire State Building",
-    description: "Famous skyscraper in New York City",
-    location: {
-      lat: 40.7484405,
-      lng: -73.9878584,
-    },
-    address: "20 W 34th St, New York, NY 10001",
-    creator: "u1",
-  },
-];
-
-/**
  * Handles GET requests for a single place.
  *
  * @param {import('express').Request} req - Request containing `placeId`.
