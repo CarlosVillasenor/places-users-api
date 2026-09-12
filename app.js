@@ -39,11 +39,12 @@ app.use((req, res, next) => {
 }); 
 
 /**
- * Converts errors from route handlers into JSON HTTP responses. Errors raised
- * after headers are sent are delegated to Express's default error handler.
+ * Converts errors from route handlers into JSON HTTP responses.
  */
 app.use((error, req, res, next) => {
+  // Check if the response headers have already been sent.
   res.status(error.code || 500);
+  // Set the HTTP status code for the response based on the error object.
   res.json({
     message: error.message || "An unknown error occurred!",
   });
