@@ -1,36 +1,37 @@
 /**
  * Users Controller
- * 
+ *
  * Handles HTTP requests for user authentication and management, including
  * user registration (signup), authentication (login), and user retrieval.
- * 
+ *
  * Note: This controller uses in-memory storage with DUMMY_USERS. In production,
  * this should be replaced with a persistent database.
  */
 
-const uuid = require('uuid');
-const { validationResult } = require('express-validator');
-const HttpError = require('../models/http-error');
+const uuid = require("uuid");
+const { validationResult } = require("express-validator");
+const HttpError = require("../models/http-error");
+const User = require("../models/user");
 
 /**
  * Temporary in-memory user records used until persistent storage is added.
  * In production, this should be replaced with a database query.
  */
 const DUMMY_USERS = [
-    {
-        id: 'u1',
-        name: 'Test User',
-        email: 'test@test.com',
-        password: 'testpassword'
-    }
+  {
+    id: "u1",
+    name: "Test User",
+    email: "test@test.com",
+    password: "testpassword",
+  },
 ];
 
 /**
  * Retrieves all users from the in-memory store.
- * 
+ *
  * WARNING: This endpoint exposes all user data including passwords.
  * Should only be used for development/testing purposes.
- * 
+ *
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
  * @param {import('express').NextFunction} next - Express continuation callback.
@@ -42,59 +43,86 @@ const getUsers = (req, res, next) => {
 
 /**
  * Registers a new user with the provided credentials.
- * 
+ *
  * Validates that name, email, and password are provided, ensures the email
  * is unique, and creates a new user record in the in-memory store.
- * 
+ *
  * Request body should contain:
  * - name: {string} User's full name
  * - email: {string} User's email address (must be unique)
  * - password: {string} User's password (minimum 6 characters)
- * 
+ *
  * @param {import('express').Request} req - Request containing signup data in body.
  * @param {import('express').Response} res - Response used to return the created user.
  * @param {import('express').NextFunction} next - Express continuation callback.
  * @returns {void} Returns created user object with status 201.
  * @throws {HttpError} Status 422 if validation fails or email already exists.
  */
-const signup = (req, res, next) => {
+const signup = async (req, res, next) => {
+  // Validate the incoming request for required fields and correct format.
   const errors = validationResult(req);
+
   // Check for validation errors from express-validator.
   if (!errors.isEmpty()) {
-    throw new HttpError('Invalid inputs passed, please check your data.', 422);
+    const error = new HttpError("Invalid inputs passed, please check your data.", 422);
+    return next(error);
   }
 
   // Extract the user details from the request body.
-  const { name, email, password } = req.body;
+  const { name, email, password, places } = req.body;
 
-  if (!name || !email || !password) {
-    throw new HttpError('Missing required fields', 422);
-  }
-  if (email && DUMMY_USERS.find(user => user.email === email)) {
-    throw new HttpError('User with this email already exists', 422);
+  let existingUser;
+
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new HttpError(
+      "Signing up failed, please try again later.",
+      500,
+    );
+    return next(error);
   }
 
-  const newUser = {
-    id: uuid.v4(),
+  if (existingUser) {
+    const error = new HttpError(
+      "User already exists, please login instead.",
+      422,
+    );
+    return next(error);
+  }
+
+  const createdUser = new User({
     name,
     email,
-    password
-  };
+    password,
+    image:
+      "https://static.vecteezy.com/system/resources/previews/023/211/970/large_2x/avatar-icon-sample-vector.jpg",
+    places,
+  });
 
-  DUMMY_USERS.push(newUser);
-  res.status(201).json({ user: newUser });
+  try {
+    await createdUser.save();
+  } catch (err) {
+    const error = new HttpError(
+      "Signing up failed, please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
+  res.status(201).json({ user: createdUser.toObject({ getters: true }) });
 };
 
 /**
  * Authenticates a user by verifying email and password credentials.
- * 
+ *
  * Searches the in-memory store for a user matching the provided email and
  * password combination. Returns user data on successful authentication.
- * 
+ *
  * Request body should contain:
  * - email: {string} User's email address
  * - password: {string} User's password
- * 
+ *
  * @param {import('express').Request} req - Request containing login credentials in body.
  * @param {import('express').Response} res - Response used to return authentication result.
  * @param {import('express').NextFunction} next - Express continuation callback.
@@ -104,17 +132,19 @@ const signup = (req, res, next) => {
 const login = (req, res, next) => {
   const { email, password } = req.body;
 
-  const existingUser = DUMMY_USERS.find(user => user.email === email && user.password === password);
+  const existingUser = DUMMY_USERS.find(
+    (user) => user.email === email && user.password === password,
+  );
 
   if (!existingUser) {
-    throw new HttpError('Could not identify user, invalid credentials', 401);
+    throw new HttpError("Could not identify user, invalid credentials", 401);
   }
 
-  res.status(200).json({ message: 'Login successful', user: existingUser });
+  res.status(200).json({ message: "Login successful", user: existingUser });
 };
 
 module.exports = {
   getUsers,
   signup,
-  login
+  login,
 };
