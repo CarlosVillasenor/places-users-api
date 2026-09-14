@@ -20,7 +20,7 @@ const placeSchema = new Schema({
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true }
   },
-  creator: { type: String, required: true, ref: 'User' }
+  creator: { type: mongoose.Types.ObjectId, required: true, ref: 'User' }
 });
 
 /** Mongoose model used to create and query place documents. */

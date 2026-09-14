@@ -86,7 +86,7 @@ const signup = async (req, res, next) => {
   }
 
   // Extract the user details from the request body.
-  const { name, email, password, places } = req.body;
+  const { name, email, password } = req.body;
 
   let existingUser;
 
@@ -114,7 +114,7 @@ const signup = async (req, res, next) => {
     password,
     image:
       "https://static.vecteezy.com/system/resources/previews/023/211/970/large_2x/avatar-icon-sample-vector.jpg",
-    places,
+    places: []
   });
 
   try {
