@@ -37,8 +37,22 @@ const DUMMY_USERS = [
  * @param {import('express').NextFunction} next - Express continuation callback.
  * @returns {void} Returns JSON array of all users with status 200.
  */
-const getUsers = (req, res, next) => {
-  res.status(200).json({ users: DUMMY_USERS });
+const getUsers = async (req, res, next) => {
+  let users;
+
+  try {
+    users = await User.find({}, "-password");
+  } catch (err) {
+    const error = new HttpError(
+      "Fetching users failed, please try again later.",
+      500,
+    );
+    return next(error);
+  }
+
+  res
+    .status(200)
+    .json({ users: users.map((user) => user.toObject({ getters: true })) });
 };
 
 /**
@@ -64,7 +78,10 @@ const signup = async (req, res, next) => {
 
   // Check for validation errors from express-validator.
   if (!errors.isEmpty()) {
-    const error = new HttpError("Invalid inputs passed, please check your data.", 422);
+    const error = new HttpError(
+      "Invalid inputs passed, please check your data.",
+      422,
+    );
     return next(error);
   }
 
@@ -129,18 +146,33 @@ const signup = async (req, res, next) => {
  * @returns {void} Returns success message and user object with status 200 on successful login.
  * @throws {HttpError} Status 401 if credentials are invalid.
  */
-const login = (req, res, next) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
 
-  const existingUser = DUMMY_USERS.find(
-    (user) => user.email === email && user.password === password,
-  );
+  let existingUser;
 
-  if (!existingUser) {
-    throw new HttpError("Could not identify user, invalid credentials", 401);
+  try {
+    existingUser = await User.findOne({ email: email });
+  } catch (err) {
+    const error = new HttpError(
+      "Logging in failed, please try again later.",
+      500,
+    );
+    return next(error);
   }
 
-  res.status(200).json({ message: "Login successful", user: existingUser });
+  if (!existingUser || existingUser.password !== password) {
+    const error = new HttpError(
+      "Invalid credentials, could not log you in.",
+      401,
+    );
+    return next(error);
+  }
+
+  res.json({
+    message: "Login successful",
+    user: existingUser.toObject({ getters: true }),
+  });
 };
 
 module.exports = {
