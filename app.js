@@ -21,6 +21,17 @@ const app = express();
 app.use(bodyParser.json());
 
 /**
+ * Configures Cross-Origin Resource Sharing (CORS) headers to allow
+ * requests from any origin and specify allowed headers and methods.
+ */
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
+  next();
+});
+
+/**
  * Registers places endpoints under the /api/places base path.
  */
 app.use('/api/places', placesRoutes);
