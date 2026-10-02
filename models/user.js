@@ -9,6 +9,7 @@ const uniqueValidator = require("mongoose-unique-validator").default;
  * @property {string} email - Email address of the user.
  * @property {string} password - Hashed password of the user.
  * @property {string} image - URL of the user's profile image.
+ * @property {Array} places - Array of place IDs associated with the user.
  */
 const userSchema = new Schema({
   name: { type: String, required: true },
